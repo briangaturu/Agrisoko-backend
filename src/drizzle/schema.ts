@@ -15,11 +15,7 @@ import { relations } from "drizzle-orm";
    ENUMS
 ========================= */
 
-export const userRoleEnum = pgEnum("user_role", [
-  "FARMER",
-  "BUYER",
-  "ADMIN",
-]);
+export const userRoleEnum = pgEnum("user_role", ["FARMER", "BUYER", "ADMIN"]);
 
 export const listingStatusEnum = pgEnum("listing_status", [
   "ACTIVE",
@@ -45,11 +41,11 @@ export const paymentStatusEnum = pgEnum("payment_status", [
 ========================= */
 
 export const users = pgTable("users", {
-  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("id").defaultRandom().primaryKey(), // ✅ id -> userId (kept DB column name "id")
   fullName: varchar("full_name", { length: 100 }).notNull(),
   email: varchar("email", { length: 150 }).unique().notNull(),
   phone: varchar("phone", { length: 20 }).unique(),
-  passwordHash: text("password_hash").notNull(),
+  password: text("password").notNull(),
   role: userRoleEnum("role").default("BUYER").notNull(),
   isVerified: boolean("is_verified").default(false),
   createdAt: timestamp("created_at").defaultNow(),
@@ -59,7 +55,7 @@ export const users = pgTable("users", {
 export const profiles = pgTable("profiles", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("user_id")
-    .references(() => users.id)
+    .references(() => users.userId) // ✅ updated reference
     .notNull(),
   location: varchar("location", { length: 150 }),
   bio: text("bio"),
@@ -96,7 +92,7 @@ export const crops = pgTable("crops", {
 export const listings = pgTable("listings", {
   id: uuid("id").defaultRandom().primaryKey(),
   farmerId: uuid("farmer_id")
-    .references(() => users.id)
+    .references(() => users.userId) // ✅ updated reference
     .notNull(),
   cropId: uuid("crop_id")
     .references(() => crops.id)
@@ -125,7 +121,7 @@ export const listingImages = pgTable("listing_images", {
 export const orders = pgTable("orders", {
   id: uuid("id").defaultRandom().primaryKey(),
   buyerId: uuid("buyer_id")
-    .references(() => users.id)
+    .references(() => users.userId) // ✅ updated reference
     .notNull(),
   status: orderStatusEnum("status").default("PENDING"),
   totalAmount: numeric("total_amount", { precision: 10, scale: 2 }).notNull(),
@@ -173,7 +169,7 @@ export const conversationParticipants = pgTable(
       .references(() => conversations.id)
       .notNull(),
     userId: uuid("user_id")
-      .references(() => users.id)
+      .references(() => users.userId) // ✅ updated reference
       .notNull(),
   }
 );
@@ -184,7 +180,7 @@ export const messages = pgTable("messages", {
     .references(() => conversations.id)
     .notNull(),
   senderId: uuid("sender_id")
-    .references(() => users.id)
+    .references(() => users.userId) // ✅ updated reference
     .notNull(),
   content: text("content").notNull(),
   isRead: boolean("is_read").default(false),
@@ -211,7 +207,7 @@ export const cropPrices = pgTable("crop_prices", {
 
 export const usersRelations = relations(users, ({ one, many }) => ({
   profile: one(profiles, {
-    fields: [users.id],
+    fields: [users.userId], // ✅ updated
     references: [profiles.userId],
   }),
 
@@ -225,7 +221,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
 export const profilesRelations = relations(profiles, ({ one }) => ({
   user: one(users, {
     fields: [profiles.userId],
-    references: [users.id],
+    references: [users.userId], // ✅ updated
   }),
 }));
 
@@ -245,7 +241,7 @@ export const cropsRelations = relations(crops, ({ one, many }) => ({
 export const listingsRelations = relations(listings, ({ one, many }) => ({
   farmer: one(users, {
     fields: [listings.farmerId],
-    references: [users.id],
+    references: [users.userId], // ✅ updated
     relationName: "farmer_listings",
   }),
   crop: one(crops, {
@@ -266,7 +262,7 @@ export const listingImagesRelations = relations(listingImages, ({ one }) => ({
 export const ordersRelations = relations(orders, ({ one, many }) => ({
   buyer: one(users, {
     fields: [orders.buyerId],
-    references: [users.id],
+    references: [users.userId], // ✅ updated
     relationName: "buyer_orders",
   }),
   items: many(orderItems),
@@ -305,7 +301,7 @@ export const conversationParticipantsRelations = relations(
     }),
     user: one(users, {
       fields: [conversationParticipants.userId],
-      references: [users.id],
+      references: [users.userId], // ✅ updated
     }),
   })
 );
@@ -317,7 +313,7 @@ export const messagesRelations = relations(messages, ({ one }) => ({
   }),
   sender: one(users, {
     fields: [messages.senderId],
-    references: [users.id],
+    references: [users.userId], // ✅ updated
     relationName: "sender_messages",
   }),
 }));
