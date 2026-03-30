@@ -21,6 +21,7 @@
   "packageManager": "pnpm@10.10.0",
   "dependencies": {
     "@types/dotenv": "^8.2.3",
+    "axios": "^1.13.6",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
@@ -32,6 +33,7 @@
     "nodemailer": "^7.0.3",
     "pg": "^8.16.0",
     "rate-limiter-flexible": "^7.1.1",
+    "stripe": "^20.4.1",
     "zod": "^3.25.34"
   },
   "devDependencies": {

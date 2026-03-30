@@ -37,7 +37,7 @@ export const createUser = async (req: Request, res: Response) => {
     if (existingUser) {
       return res.status(400).json({ error: "User with this email already exists" });
     }
-    const salt=bcrypt.genSaltSync(10);
+
     const hashedPassword = await bcrypt.hash(userInput.password, 10);
 
     // Map to your schema fields
@@ -45,11 +45,11 @@ export const createUser = async (req: Request, res: Response) => {
       fullName: userInput.fullName,
       email: userInput.email,
       phone: userInput.phone ?? null,
-      password: hashedPassword, // ✅ your schema uses passwordHash
-      role: userInput.role ?? "BUYER", // ✅ FARMER | BUYER | ADMIN
-      isVerified: false, // ✅ your schema uses isVerified
+      password: hashedPassword,
+      role: userInput.role ?? "BUYER", // FARMER | BUYER | ADMIN
+      isVerified: false,
       createdAt: new Date(),
-      updatedAt: new Date(),  
+      updatedAt: new Date(),
     };
 
     const newUser = await createUserServices(payloadToCreate);
@@ -65,9 +65,10 @@ export const createUser = async (req: Request, res: Response) => {
     return res.status(201).json({
       message: "User created successfully",
       user: {
-        id: newUser.userId ?? newUser.userId, // depending on your service return shape
+        userId: newUser.userId,
         fullName: newUser.fullName,
         email: newUser.email,
+        phone: newUser.phone,
         role: newUser.role,
         isVerified: newUser.isVerified,
       },
@@ -92,30 +93,41 @@ export const loginUser = async (req: Request, res: Response) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // if you want to enforce email verification (your schema: isVerified)
+    // if you want to enforce email verification
     // if (user.isVerified === false) {
     //   return res.status(403).json({ error: "Please verify your email first" });
     // }
 
-    // ✅ your schema uses passwordHash (not password)
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ error: "Invalid password" });
     }
- //Generate a token
-        let payload ={
-            userId: user.userId,
-            email: user.email,
-            //expiresIn: "1h" // Optional: Set token expiration
-            exp: Math.floor(Date.now() / 1000) + (60 * 60) // Token expires in 1 hour
-        }
-    
-  let secret = process.env.JWT_SECRET as string;
-        const token = jwt.sign(payload, secret);
 
-    res.status(200).json({ token, userId: user.userId, email: user.email });
-  } catch (error:any) {
-    res.status(500).json({ error:error.message || "Failed to login user" });
+    // ✅ include role in token payload
+    const payload = {
+      userId: user.userId,
+      email: user.email,
+      role: user.role, // ✅ ADD THIS
+      exp: Math.floor(Date.now() / 1000) + 60 * 60, // 1 hour
+    };
+
+    const token = jwt.sign(payload, getJWTSecret());
+
+    // ✅ return role (and fullName/phone if you want)
+    return res.status(200).json({
+      message: "Login successful",
+      token,
+      user: {
+        userId: user.userId,
+        fullName: user.fullName,
+        email: user.email,
+        phone: user.phone,
+        role: user.role, // ✅ ADD THIS
+        isVerified: user.isVerified,
+      },
+    });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message || "Failed to login user" });
   }
 };
 
@@ -128,10 +140,12 @@ export const passwordReset = async (req: Request, res: Response) => {
     const user = await getUserByEmailService(email);
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    // ✅ token contains user.id (not userId)
+    // token contains userId in `sub`
     const resetToken = jwt.sign({ sub: user.userId }, getJWTSecret(), { expiresIn: "1h" });
 
-    const resetLink = `${process.env.FRONTEND_URL ?? "http://localhost:3000"}/reset-password/${resetToken}`;
+    const resetLink = `${
+      process.env.FRONTEND_URL ?? "http://localhost:3000"
+    }/reset-password/${resetToken}`;
 
     const results = await sendNotificationEmail(
       email,
@@ -159,7 +173,7 @@ export const updatePassword = async (req: Request, res: Response) => {
 
     const payload = jwt.verify(token, getJWTSecret()) as any;
 
-    // ✅ support both { sub: ... } and { userId: ... }
+    // support both { sub: ... } and { userId: ... }
     const userId: string | undefined = payload.sub ?? payload.userId;
     if (!userId) return res.status(400).json({ error: "Invalid token payload" });
 

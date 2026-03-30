@@ -24,14 +24,13 @@ Content-Type: application/json
 }
 
 //Login user
-
 ###
 POST http://localhost:5000/api/auth/login   
 Content-Type: application/json
 
 {
-    "email": "briangaturu03@gmail.com",
-    "password":"newpassword10"  
+    "email": "briangaturu@gmail.com",
+    "password":"12345678"  
 }   
 
 //Update user
@@ -52,7 +51,6 @@ DELETE http://localhost:5000/api/users/584b6d44-9cdc-4ff4-8b09-8877b62424b7
 Authorization: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1ODRiNmQ0NC05Y2RjLTRmZjQtOGIwOS04ODc3YjYyNDI0YjciLCJlbWFpbCI6Indhbmppa3VraXJ1bm9AZ21haWwuY29tIiwiZXhwIjoxNzcxOTM5ODYyLCJpYXQiOjE3NzE5MzYyNjJ9.qtV2oeUdJR-eoYVMZsbbpQgaPQtJQ5afQ5a0AkYvSL0
 
 //Update user password
-
 ###
 PUT http://localhost:5000/api/auth/reset-password/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJmZTY5MGIxOS1jYjYxLTRiYjEtOGQ4MC1iMTJkNTVlMmUzYTQiLCJlbWFpbCI6ImJyaWFuZ2F0dXJ1MDNAZ21haWwuY29tIiwiZXhwIjoxNzcxOTU4MDM5LCJpYXQiOjE3NzE5NTQ0Mzl9.DqRbknydLgStlrByVSa2B0f5onMd2VnYAnZQ8ERoyP4
 Content-Type: application/json 
@@ -60,3 +58,133 @@ Content-Type: application/json
 {
     "password":"updatedpassword20"
 }
+
+###
+# Crop endpoints
+
+# Get all crops
+GET http://localhost:5000/api/crops
+
+# Get crop by id
+###
+GET http://localhost:5000/api/crops/1
+
+# Create crop
+###
+POST http://localhost:5000/api/crops
+Content-Type: application/json
+
+{
+  "name": "Maize",
+  "category": "Grains",
+  "unit": "kg",
+  "cropUrl": "https://example.com/maize.jpg"
+}
+
+# Update crop
+###
+PUT http://localhost:5000/api/crops/1
+Content-Type: application/json
+
+{
+  "name": "Updated Maize",
+  "category": "Cereals"
+}
+
+# Delete crop
+###
+DELETE http://localhost:5000/api/crops/1
+
+# ─── ORDERS ───────────────────────────────────────────────
+
+# Get all orders
+###
+GET http://localhost:5000/api/orders
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxODdhMjliOC1jYjRlLTQ1MTYtOGQzMS00ZWY1MzI1MmNjOTYiLCJlbWFpbCI6ImJyaWFuZ2F0dXJ1QGdtYWlsLmNvbSIsInJvbGUiOiJCVVlFUiIsImV4cCI6MTc3MzgzMTQwOSwiaWF0IjoxNzczODI3ODA5fQ.3Zt51cnMJmHT0MNOzRtNo2dp-QAr_UlmWtd3afbrPu4
+
+# Get order by id
+###
+GET http://localhost:5000/api/orders/1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1ODRiNmQ0NC05Y2RjLTRmZjQtOGIwOS04ODc3YjYyNDI0YjciLCJlbWFpbCI6Indhbmppa3VraXJ1bm9AZ21haWwuY29tIiwiZXhwIjoxNzcxOTM5ODYyLCJpYXQiOjE3NzE5MzYyNjJ9.qtV2oeUdJR-eoYVMZsbbpQgaPQtJQ5afQ5a0AkYvSL0
+
+# Get orders by buyer
+###
+GET http://localhost:5000/api/orders/buyer/104bd1af-02c3-41ac-94aa-27965d96d19e
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1ODRiNmQ0NC05Y2RjLTRmZjQtOGIwOS04ODc3YjYyNDI0YjciLCJlbWFpbCI6Indhbmppa3VraXJ1bm9AZ21haWwuY29tIiwiZXhwIjoxNzcxOTM5ODYyLCJpYXQiOjE3NzE5MzYyNjJ9.qtV2oeUdJR-eoYVMZsbbpQgaPQtJQ5afQ5a0AkYvSL0
+
+# Create order
+###
+POST http://localhost:5000/api/orders
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxODdhMjliOC1jYjRlLTQ1MTYtOGQzMS00ZWY1MzI1MmNjOTYiLCJlbWFpbCI6ImJyaWFuZ2F0dXJ1QGdtYWlsLmNvbSIsInJvbGUiOiJCVVlFUiIsImV4cCI6MTc3MzgzMTQwOSwiaWF0IjoxNzczODI3ODA5fQ.3Zt51cnMJmHT0MNOzRtNo2dp-QAr_UlmWtd3afbrPu4
+
+{
+  "buyerId": 1,
+  "totalAmount": "5000.00",
+  "items": [
+    {
+      "listingId": 1,
+      "quantity": 2,
+      "price": "2500.00"
+    }
+  ]
+}
+
+# Update order status
+###
+PUT http://localhost:5000/api/orders/1
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1ODRiNmQ0NC05Y2RjLTRmZjQtOGIwOS04ODc3YjYyNDI0YjciLCJlbWFpbCI6Indhbmppa3VraXJ1bm9AZ21haWwuY29tIiwiZXhwIjoxNzcxOTM5ODYyLCJpYXQiOjE3NzE5MzYyNjJ9.qtV2oeUdJR-eoYVMZsbbpQgaPQtJQ5afQ5a0AkYvSL0
+
+{
+  "status": "PAID"
+}
+
+# Delete order
+###
+DELETE http://localhost:5000/api/orders/1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1ODRiNmQ0NC05Y2RjLTRmZjQtOGIwOS04ODc3YjYyNDI0YjciLCJlbWFpbCI6Indhbmppa3VraXJ1bm9AZ21haWwuY29tIiwiZXhwIjoxNzcxOTM5ODYyLCJpYXQiOjE3NzE5MzYyNjJ9.qtV2oeUdJR-eoYVMZsbbpQgaPQtJQ5afQ5a0AkYvSL0
+
+# ─── PAYMENTS ─────────────────────────────────────────────
+
+# Get all payments
+###
+GET http://localhost:5000/api/payments
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1ODRiNmQ0NC05Y2RjLTRmZjQtOGIwOS04ODc3YjYyNDI0YjciLCJlbWFpbCI6Indhbmppa3VraXJ1bm9AZ21haWwuY29tIiwiZXhwIjoxNzcxOTM5ODYyLCJpYXQiOjE3NzE5MzYyNjJ9.qtV2oeUdJR-eoYVMZsbbpQgaPQtJQ5afQ5a0AkYvSL0
+
+# Get payment by id
+###
+GET http://localhost:5000/api/payments/1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1ODRiNmQ0NC05Y2RjLTRmZjQtOGIwOS04ODc3YjYyNDI0YjciLCJlbWFpbCI6Indhbmppa3VraXJ1bm9AZ21haWwuY29tIiwiZXhwIjoxNzcxOTM5ODYyLCJpYXQiOjE3NzE5MzYyNjJ9.qtV2oeUdJR-eoYVMZsbbpQgaPQtJQ5afQ5a0AkYvSL0
+
+# Get payments by order
+###
+GET http://localhost:5000/api/payments/order/1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1ODRiNmQ0NC05Y2RjLTRmZjQtOGIwOS04ODc3YjYyNDI0YjciLCJlbWFpbCI6Indhbmppa3VraXJ1bm9AZ21haWwuY29tIiwiZXhwIjoxNzcxOTM5ODYyLCJpYXQiOjE3NzE5MzYyNjJ9.qtV2oeUdJR-eoYVMZsbbpQgaPQtJQ5afQ5a0AkYvSL0
+
+# Create payment
+###
+POST http://localhost:5000/api/payments
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1ODRiNmQ0NC05Y2RjLTRmZjQtOGIwOS04ODc3YjYyNDI0YjciLCJlbWFpbCI6Indhbmppa3VraXJ1bm9AZ21haWwuY29tIiwiZXhwIjoxNzcxOTM5ODYyLCJpYXQiOjE3NzE5MzYyNjJ9.qtV2oeUdJR-eoYVMZsbbpQgaPQtJQ5afQ5a0AkYvSL0
+
+{
+  "orderId": 1,
+  "provider": "MPESA",
+  "amount": "5000.00",
+  "transactionRef": "MP123456"
+}
+
+# Update payment status
+###
+PUT http://localhost:5000/api/payments/1
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1ODRiNmQ0NC05Y2RjLTRmZjQtOGIwOS04ODc3YjYyNDI0YjciLCJlbWFpbCI6Indhbmppa3VraXJ1bm9AZ21haWwuY29tIiwiZXhwIjoxNzcxOTM5ODYyLCJpYXQiOjE3NzE5MzYyNjJ9.qtV2oeUdJR-eoYVMZsbbpQgaPQtJQ5afQ5a0AkYvSL0
+
+{
+  "status": "SUCCESS"
+}
+
+
+GET http://localhost:5000/api/orders/buyer/61d88b0c-eab2-4c69-9e59-74c39a5216b6
+Authorization: Bearer your_token_here

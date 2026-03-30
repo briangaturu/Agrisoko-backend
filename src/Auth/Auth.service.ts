@@ -34,7 +34,7 @@ export const updateUserPasswordService = async (
   const result = await db
     .update(users)
     .set({
-      passwordHash: newPasswordHash, // ✅ correct field from your schema
+      password: newPasswordHash, // ✅ correct field from your schema
       updatedAt: new Date(),
     })
     .where(eq(users.email, email))

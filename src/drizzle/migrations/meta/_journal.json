@@ -5,8 +5,22 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1771863368989,
-      "tag": "0000_aromatic_grandmaster",
+      "when": 1772112357116,
+      "tag": "0000_robust_puma",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1774202480746,
+      "tag": "0001_absent_morgan_stark",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1774202961858,
+      "tag": "0002_curvy_stryfe",
       "breakpoints": true
     }
   ]

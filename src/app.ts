@@ -4,6 +4,10 @@ import cors from "cors";
 import { rateLimiterMiddleware } from "./middleware/rateLimiter";
 import { NextFunction } from "express";
 import { authRouter } from "./Auth/Auth.route";
+import { cropRouter } from "./crops/crop.route";
+import { listingsRouter } from "./listings/listings.route";
+import { ordersRouter } from "./orders/orders.route";
+import { paymentsRouter } from "./payments/payments.route";
 
 
 const app: Application = express();
@@ -30,6 +34,14 @@ app.get("/", (req: Request, res: Response) => {
 //User routes
 app.use("/api/users", userRouter);
 app.use("/api/auth", authRouter); // Assuming auth routes are in the same router for simplicity
+// crop endpoints
+app.use("/api/crops", cropRouter);
+// listings endpoints
+app.use("/api/listings", listingsRouter);
+//orders endpoints
+app.use("/api/orders", ordersRouter)
+//payments endpoints
+app.use("/api/payments", paymentsRouter)
 
 
 
