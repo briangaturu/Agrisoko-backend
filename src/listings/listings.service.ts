@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, StringChunk } from "drizzle-orm";
 import db from "../drizzle/db";
 import { listings } from "../drizzle/schema";
 import { InferInsertModel, InferSelectModel } from "drizzle-orm";
@@ -7,7 +7,7 @@ export type TListingInsert = InferInsertModel<typeof listings>;
 export type TListingSelect = InferSelectModel<typeof listings>;
 
 // GET ALL LISTINGS
-export const getListingsServices = async (): Promise<TListingSelect[]> => {
+export const getAllListingsServices = async (): Promise<TListingSelect[]> => {
   return await db.query.listings.findMany({
     with: {
       farmer: true,
@@ -18,7 +18,7 @@ export const getListingsServices = async (): Promise<TListingSelect[]> => {
 
 // GET LISTING BY ID
 export const getListingByIdServices = async (
-  listingId: number
+  listingId: string
 ): Promise<TListingSelect | undefined> => {
   return await db.query.listings.findFirst({
     where: eq(listings.id, listingId),
@@ -35,7 +35,7 @@ export const createListingServices = async (
 
 // UPDATE LISTING
 export const updateListingServices = async (
-  listingId: number,
+  listingId: string,
   listing: Partial<TListingInsert>
 ): Promise<TListingSelect> => {
   const [updated] = await db
@@ -52,7 +52,7 @@ export const updateListingServices = async (
 
 // DELETE LISTING
 export const deleteListingServices = async (
-  listingId: number
+  listingId: string
 ): Promise<string> => {
   const deleted = await db
     .delete(listings)

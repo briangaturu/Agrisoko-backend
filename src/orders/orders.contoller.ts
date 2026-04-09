@@ -7,6 +7,10 @@ import {
   updateOrderService,
   deleteOrderService,
 } from "./orders.service";
+import { sendNotification } from "../server";
+import db from "../drizzle/db";
+import { listings } from "../drizzle/schema";
+import { eq } from "drizzle-orm";
 
 // GET ALL ORDERS
 export const getOrders = async (req: Request, res: Response) => {
@@ -49,6 +53,18 @@ export const createOrder = async (req: Request, res: Response) => {
       return res.status(400).json({ error: "buyerId, totalAmount and items are required" });
     }
     const data = await createOrderService({ buyerId, totalAmount }, items);
+    const listing = await db.query.listings.findFirst({
+      where: eq(listings.id, items[0].listingId),
+    });
+
+    if (listing?.farmerId) {
+      await sendNotification(listing.farmerId, {
+        title: "New Order Received! 🛒",
+        message: `You have a new order worth KES ${Number(totalAmount).toLocaleString()}`,
+        type: "ORDER",
+        link: "/farmer-dashboard/orders",
+      });
+    }
     res.status(201).json({ message: "Order created successfully", data });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -74,3 +90,17 @@ export const deleteOrder = async (req: Request, res: Response) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+// CONFIRM ORDER RECEIVED
+export const confirmOrderReceived = async (req: Request, res: Response) => {
+  try {
+    const orderId = String(req.params.id);
+    const data = await updateOrderService(orderId, { status: "CONFIRMED" });
+    res.json({ message: "Order confirmed successfully", data });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
+

@@ -16,7 +16,7 @@ import { relations } from "drizzle-orm";
 ========================= */
 export const userRoleEnum = pgEnum("user_role", ["FARMER", "BUYER", "ADMIN"]);
 export const listingStatusEnum = pgEnum("listing_status", ["ACTIVE", "SOLD", "PAUSED"]);
-export const orderStatusEnum = pgEnum("order_status", ["PENDING", "PAID", "DELIVERED", "CANCELLED"]);
+export const orderStatusEnum = pgEnum("order_status", ["PENDING", "PAID", "CONFIRMED", "CANCELLED"]);
 export const paymentStatusEnum = pgEnum("payment_status", ["SUCCESS", "FAILED", "PENDING"]);
 
 /* =========================
@@ -36,7 +36,9 @@ export const users = pgTable("users", {
 
 export const profiles = pgTable("profiles", {
   id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id").references(() => users.userId).notNull(),
+  userId: uuid("user_id")
+    .references(() => users.userId, { onUpdate: "cascade", onDelete: "cascade" })
+    .notNull(),
   location: varchar("location", { length: 150 }),
   bio: text("bio"),
   profileImage: text("profile_image"),
@@ -61,8 +63,12 @@ export const crops = pgTable("crops", {
 ========================= */
 export const listings = pgTable("listings", {
   id: uuid("id").primaryKey().defaultRandom(),
-  farmerId: uuid("farmer_id").references(() => users.userId).notNull(),
-  cropId: uuid("crop_id").references(() => crops.id).notNull(),
+  farmerId: uuid("farmer_id")
+    .references(() => users.userId, { onUpdate: "cascade", onDelete: "cascade" })
+    .notNull(),
+  cropId: uuid("crop_id")
+    .references(() => crops.id, { onUpdate: "cascade", onDelete: "cascade" })
+    .notNull(),
   pricePerUnit: numeric("price_per_unit", { precision: 10, scale: 2 }).notNull(),
   quantityAvailable: integer("quantity_available").notNull(),
   description: text("description"),
@@ -74,7 +80,9 @@ export const listings = pgTable("listings", {
 
 export const listingImages = pgTable("listing_images", {
   id: uuid("id").primaryKey().defaultRandom(),
-  listingId: uuid("listing_id").references(() => listings.id).notNull(),
+  listingId: uuid("listing_id")
+    .references(() => listings.id, { onUpdate: "cascade", onDelete: "cascade" })
+    .notNull(),
   imageUrl: text("image_url").notNull(),
 });
 
@@ -83,7 +91,9 @@ export const listingImages = pgTable("listing_images", {
 ========================= */
 export const orders = pgTable("orders", {
   id: uuid("id").primaryKey().defaultRandom(),
-  buyerId: uuid("buyer_id").references(() => users.userId).notNull(),
+  buyerId: uuid("buyer_id")
+    .references(() => users.userId, { onUpdate: "cascade", onDelete: "cascade" })
+    .notNull(),
   status: orderStatusEnum("status").default("PENDING"),
   totalAmount: numeric("total_amount", { precision: 10, scale: 2 }).notNull(),
   createdAt: timestamp("created_at").defaultNow(),
@@ -91,8 +101,12 @@ export const orders = pgTable("orders", {
 
 export const orderItems = pgTable("order_items", {
   id: uuid("id").primaryKey().defaultRandom(),
-  orderId: uuid("order_id").references(() => orders.id).notNull(),
-  listingId: uuid("listing_id").references(() => listings.id).notNull(),
+  orderId: uuid("order_id")
+    .references(() => orders.id, { onUpdate: "cascade", onDelete: "cascade" })
+    .notNull(),
+  listingId: uuid("listing_id")
+    .references(() => listings.id, { onUpdate: "cascade", onDelete: "cascade" })
+    .notNull(),
   quantity: integer("quantity").notNull(),
   price: numeric("price", { precision: 10, scale: 2 }).notNull(),
 });
@@ -102,7 +116,9 @@ export const orderItems = pgTable("order_items", {
 ========================= */
 export const payments = pgTable("payments", {
   id: uuid("id").primaryKey().defaultRandom(),
-  orderId: uuid("order_id").references(() => orders.id).notNull(),
+  orderId: uuid("order_id")
+    .references(() => orders.id, { onUpdate: "cascade", onDelete: "cascade" })
+    .notNull(),
   provider: varchar("provider", { length: 50 }).notNull(),
   amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
   status: paymentStatusEnum("status").default("PENDING"),
@@ -120,14 +136,22 @@ export const conversations = pgTable("conversations", {
 
 export const conversationParticipants = pgTable("conversation_participants", {
   id: uuid("id").primaryKey().defaultRandom(),
-  conversationId: uuid("conversation_id").references(() => conversations.id).notNull(),
-  userId: uuid("user_id").references(() => users.userId).notNull(),
+  conversationId: uuid("conversation_id")
+    .references(() => conversations.id, { onUpdate: "cascade", onDelete: "cascade" })
+    .notNull(),
+  userId: uuid("user_id")
+    .references(() => users.userId, { onUpdate: "cascade", onDelete: "cascade" })
+    .notNull(),
 });
 
 export const messages = pgTable("messages", {
   id: uuid("id").primaryKey().defaultRandom(),
-  conversationId: uuid("conversation_id").references(() => conversations.id).notNull(),
-  senderId: uuid("sender_id").references(() => users.userId).notNull(),
+  conversationId: uuid("conversation_id")
+    .references(() => conversations.id, { onUpdate: "cascade", onDelete: "cascade" })
+    .notNull(),
+  senderId: uuid("sender_id")
+    .references(() => users.userId, { onUpdate: "cascade", onDelete: "cascade" })
+    .notNull(),
   content: text("content").notNull(),
   isRead: boolean("is_read").default(false),
   createdAt: timestamp("created_at").defaultNow(),
@@ -138,11 +162,31 @@ export const messages = pgTable("messages", {
 ========================= */
 export const cropPrices = pgTable("crop_prices", {
   id: uuid("id").primaryKey().defaultRandom(),
-  cropId: uuid("crop_id").references(() => crops.id).notNull(),
+  cropId: uuid("crop_id")
+    .references(() => crops.id, { onUpdate: "cascade", onDelete: "cascade" })
+    .notNull(),
   market: varchar("market", { length: 100 }).notNull(),
   price: numeric("price", { precision: 10, scale: 2 }).notNull(),
   date: timestamp("date").notNull(),
 });
+
+/* =========================
+   NOTIFICATIONS
+========================= */
+export const notifications = pgTable("notifications", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .references(() => users.userId, { onUpdate: "cascade", onDelete: "cascade" })
+    .notNull(),
+  title: varchar("title", { length: 150 }).notNull(),
+  message: text("message").notNull(),
+  type: varchar("type", { length: 50 }).notNull(),
+  isRead: boolean("is_read").default(false),
+  link: varchar("link", { length: 255 }),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+
 
 /* =========================
    RELATIONS
@@ -153,6 +197,7 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   buyerOrders: many(orders, { relationName: "buyer_orders" }),
   conversationParticipants: many(conversationParticipants),
   sentMessages: many(messages, { relationName: "sender_messages" }),
+  notifications: many(notifications),
 }));
 
 export const profilesRelations = relations(profiles, ({ one }) => ({
@@ -207,4 +252,8 @@ export const messagesRelations = relations(messages, ({ one }) => ({
 
 export const cropPricesRelations = relations(cropPrices, ({ one }) => ({
   crop: one(crops, { fields: [cropPrices.cropId], references: [crops.id] }),
+}));
+
+export const notificationsRelations = relations(notifications, ({ one }) => ({
+  user: one(users, { fields: [notifications.userId], references: [users.userId] }),
 }));
