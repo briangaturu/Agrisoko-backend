@@ -6,7 +6,8 @@ import {
   createOrder,
   updateOrder,
   deleteOrder,
-  confirmOrderReceived
+  confirmOrderReceived,
+  markOrderDelivered
 } from "./orders.contoller";
 import { bothRoleAuth } from "../middleware/AuthBearer";
 
@@ -21,3 +22,4 @@ ordersRouter.delete("/:id", bothRoleAuth, deleteOrder);
 
 
 ordersRouter.put("/:id/confirm", bothRoleAuth, confirmOrderReceived);
+ordersRouter.put("/:id/deliver", bothRoleAuth, markOrderDelivered);

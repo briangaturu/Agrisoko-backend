@@ -29,7 +29,7 @@ POST http://localhost:5000/api/auth/login
 Content-Type: application/json
 
 {
-    "email": "briangaturu@gmail.com",
+    "email": "briangaturu01@gmail.com",
     "password":"12345678"  
 }   
 
@@ -188,3 +188,97 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1ODRiN
 
 GET http://localhost:5000/api/orders/buyer/61d88b0c-eab2-4c69-9e59-74c39a5216b6
 Authorization: Bearer your_token_here
+
+
+###
+POST http://localhost:5000/api/payments/mpesa/stk
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWQ4OGIwYy1lYWIyLTRjNjktOWU1OS03NGMzOWE1MjE2YjYiLCJlbWFpbCI6ImJyaWFuZ2F0dXJ1MDFAZ21haWwuY29tIiwicm9sZSI6IkJVWUVSIiwiZXhwIjoxNzc1ODE1OTE5LCJpYXQiOjE3NzU4MTIzMTl9.Aa0wf6XcbPdP5K7iKredhU-F4Vit9XXpj0ALmLxqk0E
+Content-Type: application/json
+
+{
+  "phone": "254727348863",
+  "amount": 1,
+  "orderId": "61d88b0c-eab2-4c69-9e59-74c39a5216b6",
+  "farmerPhone": "254708374149"
+}
+
+### Simulate MPesa Callback
+POST http://localhost:5000/api/payments/mpesa/callback
+Content-Type: application/json
+
+{
+  "Body": {
+    "stkCallback": {
+      "MerchantRequestID": "dd72-4283-9465-5ca58225c47011081",
+      "CheckoutRequestID": "ws_CO_10042026121514724727348863",
+      "ResultCode": 0,
+      "ResultDesc": "The service request is processed successfully.",
+      "CallbackMetadata": {
+        "Item": [
+          { "Name": "Amount", "Value": 1 },
+          { "Name": "MpesaReceiptNumber", "Value": "RGH1234XYZ" },
+          { "Name": "TransactionDate", "Value": 20260410121514 },
+          { "Name": "PhoneNumber", "Value": 254727348863 }
+        ]
+      }
+    }
+  }
+}
+
+### Get order by id
+GET http://localhost:5000/api/orders/61d88b0c-eab2-4c69-9e59-74c39a5216b6
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWQ4OGIwYy1lYWIyLTRjNjktOWU1OS03NGMzOWE1MjE2YjYiLCJlbWFpbCI6ImJyaWFuZ2F0dXJ1MDFAZ21haWwuY29tIiwicm9sZSI6IkJVWUVSIiwiZXhwIjoxNzc1ODE1OTE5LCJpYXQiOjE3NzU4MTIzMTl9.Aa0wf6XcbPdP5K7iKredhU-F4Vit9XXpj0ALmLxqk0E
+Content-Type: application/json
+
+### Get all orders
+GET http://localhost:5000/api/orders
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWQ4OGIwYy1lYWIyLTRjNjktOWU1OS03NGMzOWE1MjE2YjYiLCJlbWFpbCI6ImJyaWFuZ2F0dXJ1MDFAZ21haWwuY29tIiwicm9sZSI6IkJVWUVSIiwiZXhwIjoxNzc1ODE1OTE5LCJpYXQiOjE3NzU4MTIzMTl9.Aa0wf6XcbPdP5K7iKredhU-F4Vit9XXpj0ALmLxqk0E
+
+### Initiate STK Push
+POST http://localhost:5000/api/payments/mpesa/stk
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWQ4OGIwYy1lYWIyLTRjNjktOWU1OS03NGMzOWE1MjE2YjYiLCJlbWFpbCI6ImJyaWFuZ2F0dXJ1MDFAZ21haWwuY29tIiwicm9sZSI6IkJVWUVSIiwiZXhwIjoxNzc1ODE1OTE5LCJpYXQiOjE3NzU4MTIzMTl9.Aa0wf6XcbPdP5K7iKredhU-F4Vit9XXpj0ALmLxqk0E
+Content-Type: application/json
+
+{
+  "phone": "254708374149",
+  "amount": 1,
+  "orderId": "65b3239b-b144-4297-a3fe-d5310df6cf50",
+  "farmerPhone": "254727348863"
+}
+
+### Simulate Callback
+POST http://localhost:5000/api/payments/mpesa/callback
+Content-Type: application/json
+
+{
+  "Body": {
+    "stkCallback": {
+      "MerchantRequestID": "1318-4848-a05a-9293ce35c0e217841",
+      "CheckoutRequestID": "ws_CO_10042026122945589708374149",
+      "ResultCode": 0,
+      "ResultDesc": "The service request is processed successfully.",
+      "CallbackMetadata": {
+        "Item": [
+          { "Name": "Amount", "Value": 1 },
+          { "Name": "MpesaReceiptNumber", "Value": "RGH1234XYZ" },
+          { "Name": "TransactionDate", "Value": 20260410122945 },
+          { "Name": "PhoneNumber", "Value": 254708374149 }
+        ]
+      }
+    }
+  }
+}
+
+### Farmer marks order as delivered
+PUT http://localhost:5000/api/orders/65b3239b-b144-4297-a3fe-d5310df6cf50/deliver
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWQ4OGIwYy1lYWIyLTRjNjktOWU1OS03NGMzOWE1MjE2YjYiLCJlbWFpbCI6ImJyaWFuZ2F0dXJ1MDFAZ21haWwuY29tIiwicm9sZSI6IkJVWUVSIiwiZXhwIjoxNzc1ODE1OTE5LCJpYXQiOjE3NzU4MTIzMTl9.Aa0wf6XcbPdP5K7iKredhU-F4Vit9XXpj0ALmLxqk0E
+Content-Type: application/json
+
+### Buyer confirms receipt
+PUT http://localhost:5000/api/orders/65b3239b-b144-4297-a3fe-d5310df6cf50/confirm
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWQ4OGIwYy1lYWIyLTRjNjktOWU1OS03NGMzOWE1MjE2YjYiLCJlbWFpbCI6ImJyaWFuZ2F0dXJ1MDFAZ21haWwuY29tIiwicm9sZSI6IkJVWUVSIiwiZXhwIjoxNzc1ODE1OTE5LCJpYXQiOjE3NzU4MTIzMTl9.Aa0wf6XcbPdP5K7iKredhU-F4Vit9XXpj0ALmLxqk0E
+Content-Type: application/json
+
+### Get order
+GET http://localhost:5000/api/orders/65b3239b-b144-4297-a3fe-d5310df6cf50
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MWQ4OGIwYy1lYWIyLTRjNjktOWU1OS03NGMzOWE1MjE2YjYiLCJlbWFpbCI6ImJyaWFuZ2F0dXJ1MDFAZ21haWwuY29tIiwicm9sZSI6IkJVWUVSIiwiZXhwIjoxNzc1ODE1OTE5LCJpYXQiOjE3NzU4MTIzMTl9.Aa0wf6XcbPdP5K7iKredhU-F4Vit9XXpj0ALmLxqk0E

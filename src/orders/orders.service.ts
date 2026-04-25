@@ -109,3 +109,40 @@ export const deleteOrderService = async (
   if (deleted.length === 0) throw new Error("Order not found");
   return "Order deleted successfully";
 };
+
+export const getOrderByMpesaRequestId = async (mpesaRequestId: string) => {
+  return await db.query.orders.findFirst({
+    where: eq(orders.mpesaRequestId, mpesaRequestId),
+  });
+};
+
+// FARMER MARKS ORDER AS DELIVERED
+export const markOrderDeliveredService = async (orderId: string) => {
+  const deliveredAt = new Date();
+  const autoReleaseAt = new Date(deliveredAt.getTime() + 48 * 60 * 60 * 1000); // +48hrs
+
+  const [updated] = await db
+    .update(orders)
+    .set({
+      status: "DELIVERED",
+      deliveredAt,
+      autoReleaseAt,
+    })
+    .where(eq(orders.id, orderId))
+    .returning();
+
+  if (!updated) throw new Error("Order not found");
+  return updated;
+};
+
+// BUYER CONFIRMS RECEIPT
+export const confirmOrderReceivedService = async (orderId: string) => {
+  const [updated] = await db
+    .update(orders)
+    .set({ status: "CONFIRMED", updatedAt: new Date() })
+    .where(eq(orders.id, orderId))
+    .returning();
+
+  if (!updated) throw new Error("Order not found");
+  return updated;
+};

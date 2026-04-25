@@ -16,7 +16,18 @@ import { relations } from "drizzle-orm";
 ========================= */
 export const userRoleEnum = pgEnum("user_role", ["FARMER", "BUYER", "ADMIN"]);
 export const listingStatusEnum = pgEnum("listing_status", ["ACTIVE", "SOLD", "PAUSED"]);
-export const orderStatusEnum = pgEnum("order_status", ["PENDING", "PAID", "CONFIRMED", "CANCELLED"]);
+export const orderStatusEnum = pgEnum("order_status", [
+  "PENDING",       // order created, awaiting payment
+  "PAID",          // STK push confirmed, money in escrow
+  "RECEIVED",      // farmer acknowledged the order
+  "SHIPPED",       // farmer dispatched the order
+  "DELIVERED",     // legacy: farmer marked as delivered (kept for backwards compat)
+  "CONFIRMED",     // buyer confirmed receipt → triggers B2C to farmer
+  "CANCELLED",     // order cancelled
+  "DISPUTED",      // buyer raised a dispute
+  "REFUNDED",      // buyer refunded via B2C
+  "AUTO_RELEASED", // buyer didn't respond in 48hrs, farmer auto-paid
+]);
 export const paymentStatusEnum = pgEnum("payment_status", ["SUCCESS", "FAILED", "PENDING"]);
 
 /* =========================
@@ -96,7 +107,19 @@ export const orders = pgTable("orders", {
     .notNull(),
   status: orderStatusEnum("status").default("PENDING"),
   totalAmount: numeric("total_amount", { precision: 10, scale: 2 }).notNull(),
+
+  // ── Escrow fields ──────────────────────────────────────────
+  mpesaRequestId: varchar("mpesa_request_id", { length: 100 }),
+  mpesaReceiptNumber: varchar("mpesa_receipt_number", { length: 100 }),
+  farmerPhone: varchar("farmer_phone", { length: 20 }),
+  commissionAmount: numeric("commission_amount", { precision: 10, scale: 2 }),
+  farmerAmount: numeric("farmer_amount", { precision: 10, scale: 2 }),
+  deliveredAt: timestamp("delivered_at"),
+  autoReleaseAt: timestamp("auto_release_at"),
+  // ───────────────────────────────────────────────────────────
+
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const orderItems = pgTable("order_items", {
@@ -185,8 +208,6 @@ export const notifications = pgTable("notifications", {
   link: varchar("link", { length: 255 }),
   createdAt: timestamp("created_at").defaultNow(),
 });
-
-
 
 /* =========================
    RELATIONS

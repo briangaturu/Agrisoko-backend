@@ -1,5 +1,5 @@
 {
-  "id": "4c8a32bb-76bc-41a6-a806-2ac33cea7df3",
+  "id": "fc5d3515-90f2-4160-b00f-3e26065849e5",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -609,8 +609,57 @@
           "primaryKey": false,
           "notNull": true
         },
+        "mpesa_request_id": {
+          "name": "mpesa_request_id",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mpesa_receipt_number": {
+          "name": "mpesa_receipt_number",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "farmer_phone": {
+          "name": "farmer_phone",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "commission_amount": {
+          "name": "commission_amount",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "farmer_amount": {
+          "name": "farmer_amount",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "delivered_at": {
+          "name": "delivered_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "auto_release_at": {
+          "name": "auto_release_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
           "type": "timestamp",
           "primaryKey": false,
           "notNull": false,
@@ -889,8 +938,14 @@
       "values": [
         "PENDING",
         "PAID",
+        "RECEIVED",
+        "SHIPPED",
+        "DELIVERED",
         "CONFIRMED",
-        "CANCELLED"
+        "CANCELLED",
+        "DISPUTED",
+        "REFUNDED",
+        "AUTO_RELEASED"
       ]
     },
     "public.payment_status": {
