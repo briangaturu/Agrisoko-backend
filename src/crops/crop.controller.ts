@@ -22,8 +22,8 @@ export const getCrops = async (req: Request, res: Response) => {
 
 // GET CROP BY ID
 export const getCropById = async (req: Request, res: Response) => {
-  const cropId = parseInt(req.params.id as string);
-  if (isNaN(cropId)) {
+  const cropId = req.params.id as string;
+  if (!cropId) {
     return res.status(400).json({ error: "Invalid crop id" });
   }
 
@@ -67,10 +67,10 @@ export const createCrop = async (req: Request, res: Response) => {
 
 // UPDATE CROP
 export const updateCrop = async (req: Request, res: Response) => {
-  const cropId = parseInt(req.params.id as string);
+  const cropId = req.params.id as string;
   const { name, category, unit, cropUrl } = req.body;
 
-  if (isNaN(cropId)) {
+  if (!cropId) {
     return res.status(400).json({ error: "Invalid crop id" });
   }
   if (!name && !category && !unit && !cropUrl) {
@@ -90,8 +90,8 @@ export const updateCrop = async (req: Request, res: Response) => {
 
 // DELETE CROP
 export const deleteCrop = async (req: Request, res: Response) => {
-  const cropId = parseInt(req.params.id as string);
-  if (isNaN(cropId)) {
+  const cropId = req.params.id as string;
+  if (!cropId) {
     return res.status(400).json({ error: "Invalid crop id" });
   }
 

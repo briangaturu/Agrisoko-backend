@@ -12,7 +12,6 @@ import {
 export const getUsers = async (req: Request, res: Response) => {
   try {
     const users = await getUsersServices();
-
     return res.status(200).json({
       message: "Users fetched successfully",
       data: users,
@@ -54,26 +53,22 @@ export const getUserById = async (req: Request, res: Response) => {
 export const createUser = async (req: Request, res: Response) => {
   const { fullName, email, password, phone, role } = req.body;
 
-  // Validate required fields
   if (!fullName || !email || !password || !phone) {
     return res.status(400).json({
       error: "fullName, email, password and phone are required",
     });
   }
 
-  // Allow only FARMER or BUYER (block ADMIN)
-  const safeRole =
-    role === "FARMER" || role === "BUYER" ? role : "BUYER";
+  const safeRole = role === "FARMER" || role === "BUYER" ? role : "BUYER";
 
   try {
-    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const newUser = await createUserServices({
       fullName,
       email,
       phone,
-      password: hashedPassword, // ✅ store hashed password
+      password: hashedPassword,
       role: safeRole,
       isVerified: false,
       createdAt: new Date(),
@@ -85,6 +80,10 @@ export const createUser = async (req: Request, res: Response) => {
       data: newUser,
     });
   } catch (error: any) {
+    if (error.code === "23505") {
+      const field = error.constraint?.includes("phone") ? "Phone number" : "Email";
+      return res.status(409).json({ error: `${field} is already in use` });
+    }
     return res.status(500).json({
       error: error.message || "Failed to create user",
     });
@@ -92,50 +91,72 @@ export const createUser = async (req: Request, res: Response) => {
 };
 
 // UPDATE USER
-export const updateUser = async(req:Request,res:Response)=>{
+export const updateUser = async (req: Request, res: Response) => {
   const userId = req.params.id as string;
-  if(!userId){
-    res.status(400).json({error:"Invalid userId"})
+
+  if (!userId) {
+    return res.status(400).json({ error: "Invalid userId" });
   }
 
-  const{fullName,email,phone,password} = req.body;
-  if(!fullName || !email || !phone ){
-    res.status(400).json({error:"fullname, email,phone are required"});
+  const { fullName, email, phone, role } = req.body;
+
+
+  if (!fullName || !email || !phone) {
+    return res.status(400).json({ error: "fullName, email and phone are required" });
   }
-  try{
-    const updatedUser = await updateUserServices(userId,{
-      fullName,
-      email,
-      phone
+
+  const validRoles = ["FARMER", "BUYER", "ADMIN"];
+  const safeRole = validRoles.includes(role) ? role : undefined;
+
+ 
+
+  const payload = {
+    fullName,
+    email,
+    phone,
+    ...(safeRole && { role: safeRole }),
+  };
+
+  
+
+  try {
+    const updatedUser = await updateUserServices(userId, payload);
+
+    console.log("updatedUser:", updatedUser);
+
+    return res.status(200).json({
+      message: "User updated successfully",
+      data: updatedUser,
     });
-    if(!updatedUser){
-      res.status(404).json({message:"user not found or failed to update"})
+  } catch (error: any) {
+    if (error.code === "23505") {
+      const field = error.constraint?.includes("phone") ? "Phone number" : "Email";
+      return res.status(409).json({ error: `${field} is already in use` });
     }
-    res.status(200).json({message:"user updated successfully",
-      data:updatedUser,
-    });
-  }
-  catch(error:any){
-    res.status(500).json({error:error.message || "Failed to update user"})
+    return res.status(500).json({ error: error.message || "Failed to update user" });
   }
 };
 
-//Delete user
-export const deleteUser = async(req:Request,res:Response)=>{
+// DELETE USER
+export const deleteUser = async (req: Request, res: Response) => {
   const userId = req.params.id as string;
-  if(!userId){
-    res.status(400).json({error:"Invalid userId"})
+
+  if (!userId) {
+    return res.status(400).json({ error: "Invalid userId" });
   }
-  try{
+
+  try {
     const deletedUser = await deleteUserServices(userId);
-    if(!deletedUser){
-      res.status(404).json({message:"user not found or failed to delete"})
+
+    if (!deletedUser) {
+      return res.status(404).json({ message: "User not found or failed to delete" });
     }
-    res.status(200).json({message:"user deleted successfully",
-      data:deletedUser,
+
+    return res.status(200).json({
+      message: "User deleted successfully",
+      data: deletedUser,
     });
-  }
-  catch(error:any){
-    res.status(500).json({error:error.message || "Failed to delete user"})
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message || "Failed to delete user" });
   }
 };

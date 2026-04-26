@@ -13,7 +13,7 @@ export const getCropsServices = async (): Promise<TCropSelect[]> => {
 
 // GET CROP BY ID
 export const getCropByIdServices = async (
-  cropId: number
+  cropId: string
 ): Promise<TCropSelect | undefined> => {
   return await db.query.crops.findFirst({
     where: eq(crops.id, cropId),
@@ -30,14 +30,12 @@ export const createCropServices = async (
 
 // UPDATE CROP
 export const updateCropServices = async (
-  cropId: number,
+  cropId: string,
   crop: Partial<TCropInsert>
 ): Promise<TCropSelect> => {
   const [updated] = await db
     .update(crops)
-    .set({
-      ...crop,
-    })
+    .set({ ...crop })
     .where(eq(crops.id, cropId))
     .returning();
 
@@ -46,10 +44,11 @@ export const updateCropServices = async (
 };
 
 // DELETE CROP
-export const deleteCropServices = async (
-  cropId: number
-): Promise<string> => {
-  const deleted = await db.delete(crops).where(eq(crops.id, cropId)).returning();
+export const deleteCropServices = async (cropId: string): Promise<string> => {
+  const deleted = await db
+    .delete(crops)
+    .where(eq(crops.id, cropId))
+    .returning();
 
   if (deleted.length === 0) throw new Error("Crop not found or delete failed");
   return "Crop deleted successfully";

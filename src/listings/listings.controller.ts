@@ -7,7 +7,6 @@ import {
   deleteListingServices,
 } from "./listings.service";
 
-// ✅ Strong typing for params
 interface Params {
   id: string;
 }
@@ -28,10 +27,7 @@ export const getListings = async (req: Request, res: Response) => {
 };
 
 // GET LISTING BY ID
-export const getListingById = async (
-  req: Request<Params>,
-  res: Response
-) => {
+export const getListingById = async (req: Request<Params>, res: Response) => {
   const listingId = req.params.id;
 
   if (!listingId) {
@@ -75,8 +71,7 @@ export const createListing = async (req: Request, res: Response) => {
     quantityAvailable === undefined
   ) {
     return res.status(400).json({
-      error:
-        "farmerId, cropId, pricePerUnit and quantityAvailable are required",
+      error: "farmerId, cropId, pricePerUnit and quantityAvailable are required",
     });
   }
 
@@ -104,11 +99,8 @@ export const createListing = async (req: Request, res: Response) => {
   }
 };
 
-// UPDATE LISTING 
-export const updateListing = async (
-  req: Request<Params>,
-  res: Response
-) => {
+// UPDATE LISTING
+export const updateListing = async (req: Request<Params>, res: Response) => {
   const listingId = req.params.id;
 
   const {
@@ -156,17 +148,17 @@ export const updateListing = async (
       data: updated,
     });
   } catch (error: any) {
+    if (error.code === "23503") {
+      return res.status(409).json({ error: "Cannot update listing that has existing orders" });
+    }
     return res.status(500).json({
       error: error.message || "Failed to update listing",
     });
   }
 };
 
-// DELETE LISTING (✅ FIXED: removed parseInt)
-export const deleteListing = async (
-  req: Request<Params>,
-  res: Response
-) => {
+// DELETE LISTING
+export const deleteListing = async (req: Request<Params>, res: Response) => {
   const listingId = req.params.id;
 
   if (!listingId) {
@@ -177,6 +169,9 @@ export const deleteListing = async (
     const message = await deleteListingServices(listingId);
     return res.status(200).json({ message });
   } catch (error: any) {
+    if (error.code === "23503") {
+      return res.status(409).json({ error: "Cannot delete listing that has existing orders" });
+    }
     return res.status(500).json({
       error: error.message || "Failed to delete listing",
     });

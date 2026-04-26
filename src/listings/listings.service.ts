@@ -1,6 +1,6 @@
-import { eq, StringChunk } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import db from "../drizzle/db";
-import { listings } from "../drizzle/schema";
+import { listings, orderItems } from "../drizzle/schema";
 import { InferInsertModel, InferSelectModel } from "drizzle-orm";
 
 export type TListingInsert = InferInsertModel<typeof listings>;
@@ -11,10 +11,10 @@ export const getAllListingsServices = async (): Promise<TListingSelect[]> => {
   return await db.query.listings.findMany({
     with: {
       farmer: true,
-      crop: true
-    }
+      crop: true,
+    },
   });
-}
+};
 
 // GET LISTING BY ID
 export const getListingByIdServices = async (
@@ -40,9 +40,7 @@ export const updateListingServices = async (
 ): Promise<TListingSelect> => {
   const [updated] = await db
     .update(listings)
-    .set({
-      ...listing,
-    })
+    .set({ ...listing })
     .where(eq(listings.id, listingId))
     .returning();
 
@@ -51,14 +49,27 @@ export const updateListingServices = async (
 };
 
 // DELETE LISTING
-export const deleteListingServices = async (
-  listingId: string
-): Promise<string> => {
-  const deleted = await db
-    .delete(listings)
-    .where(eq(listings.id, listingId))
-    .returning();
+export const deleteListingServices = async (listingId: string): Promise<string> => {
+  try {
+    // Check if listing has existing orders
+    const existingOrderItem = await db.query.orderItems.findFirst({
+      where: eq(orderItems.listingId, listingId),
+    });
 
-  if (deleted.length === 0) throw new Error("Listing not found or delete failed");
-  return "Listing deleted successfully";
+    if (existingOrderItem) {
+      const error: any = new Error("Cannot delete listing that has existing orders");
+      error.code = "23503";
+      throw error;
+    }
+
+    const deleted = await db
+      .delete(listings)
+      .where(eq(listings.id, listingId))
+      .returning();
+
+    if (deleted.length === 0) throw new Error("Listing not found or delete failed");
+    return "Listing deleted successfully";
+  } catch (error: any) {
+    throw error;
+  }
 };
