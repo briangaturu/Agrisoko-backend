@@ -2,10 +2,16 @@ import fetch from "node-fetch";
 import FormData from "form-data";
 
 // ── ENV ────────────────────────────────────────────────────────────────────────
-const UJUZI_API_KEY     = process.env.UJUZI_API_KEY!;
-const WEATHER_API_KEY   = process.env.WEATHER_API_KEY!;
-const HF_API_KEY        = process.env.HF_API_KEY!;
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY!;
+const readRequiredEnv = (name: string): string => {
+  const raw = process.env[name];
+  const cleaned = raw?.trim().replace(/^['"]|['"]$/g, "");
+
+  if (!cleaned) {
+    throw new Error(`${name} is missing. Set it in your environment.`);
+  }
+
+  return cleaned;
+};
 
 // ══════════════════════════════════════════════════════════════════════════════
 // 1. MARKET PRICES — UjuziKilimo
@@ -70,8 +76,9 @@ export const getMarketPrices = async (market?: string) => {
 // 2. WEATHER — WeatherAPI.com
 // ══════════════════════════════════════════════════════════════════════════════
 export const getWeather = async (location: string, days = 5) => {
+  const weatherApiKey = readRequiredEnv("WEATHER_API_KEY");
   const url = new URL("https://api.weatherapi.com/v1/forecast.json");
-  url.searchParams.set("key", WEATHER_API_KEY);
+  url.searchParams.set("key", weatherApiKey);
   url.searchParams.set("q", location);
   url.searchParams.set("days", String(days));
   url.searchParams.set("aqi", "no");
@@ -93,12 +100,13 @@ export const detectPlantDisease = async (
   imageBuffer: Buffer,
   mimeType: string
 ) => {
+  const hfApiKey = readRequiredEnv("HF_API_KEY");
   const res = await fetch(
-    "https://api-inference.huggingface.co/models/nateraw/plant-disease-classifier",
+    "https://router.huggingface.co/hf-inference/models/ozair/plant-disease-detection",
     {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${HF_API_KEY}`,
+        Authorization: `Bearer ${hfApiKey}`,
         "Content-Type": mimeType,
       },
       body: imageBuffer,
@@ -141,54 +149,52 @@ export const detectPlantDisease = async (
 };
 
 // ══════════════════════════════════════════════════════════════════════════════
-// 4. AI INSIGHT — Anthropic Claude
+// 4. AI INSIGHT — Gemini
 // ══════════════════════════════════════════════════════════════════════════════
-export const getAIInsight = async (
-  crop: string,
-  weather?: string,
-  price?: string
-) => {
-  const prompt = `You are an expert agricultural advisor for Kenyan farmers.
+export const getAIInsight = async (crop: string, weather?: string, price?: string) => {
+  const groqKey = readRequiredEnv("GROQ_API_KEY");
+
+  const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${groqKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "llama-3.3-70b-versatile",
+      messages: [{
+        role: "user",
+        content: `You are an expert agricultural advisor for Kenyan farmers.
 
 Crop: ${crop}
-${price   ? `Market Price: ${price}` : ""}
-${weather ? `Weather: ${weather}`    : ""}
+${price ? `Market Price: ${price}` : ""}
+${weather ? `Weather: ${weather}` : ""}
 
-Give a concise, practical insight for growing and selling ${crop} in Kenya right now.
+Give concise, practical advice for growing and selling ${crop} in Kenya right now.
 Focus on: current market conditions, best farming practices, and one key tip for maximizing profit.
 
 Respond ONLY in JSON format (no markdown, no extra text):
 {
   "title": "short punchy title (max 8 words)",
   "body": "2-3 sentences of practical advice"
-}`;
-
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": ANTHROPIC_API_KEY,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: "claude-3-5-sonnet-20241022",
-      max_tokens: 500,
-      messages: [{ role: "user", content: prompt }],
-    }),
+}`
+      }],
+      max_tokens: 300,
+    })
   });
 
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Anthropic API error ${res.status}: ${err}`);
+  const data = await response.json() as any;
+
+  if (!response.ok) {
+    throw new Error(`Groq API error ${response.status}: ${JSON.stringify(data)}`);
   }
 
-  const data  = (await res.json()) as any;
-  const text  = data?.content?.[0]?.text || "";
-  const clean = text.replace(/```json|```/g, "").trim();
+  const text = data?.choices?.[0]?.message?.content || "";
 
   try {
+    const clean = text.replace(/```json|```/g, "").trim();
     return JSON.parse(clean);
   } catch {
-    return { title: "AI Insight", body: clean };
+    return { title: "AI Insight", body: text };
   }
 };

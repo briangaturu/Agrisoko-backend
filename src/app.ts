@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express, { Application, Request, Response, NextFunction } from "express";
 import cors from "cors";
 
@@ -23,11 +24,15 @@ const PORT = process.env.PORT || 5000;
 // Middleware (FIXED)
 // ─────────────────────────────────────────────
 
-// ✅ FIX 1: allow M-Pesa raw callback bodies
-app.use(express.json({ type: "*/*" }));
+
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use(cors());
+app.use(cors({
+  origin: "http://localhost:5173",
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+}));
 
 // Logger
 app.use((req: Request, res: Response, next: NextFunction) => {
@@ -133,35 +138,37 @@ Respond ONLY in JSON:
 }
 `;
 
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
+    const geminiApiKey = process.env.GEMINI_API_KEY?.trim().replace(/^['"]|['"]$/g, "");
+    if (!geminiApiKey) {
+      throw new Error("GEMINI_API_KEY is missing. Set it in your environment.");
+    }
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`,
+      {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "x-api-key": process.env.ANTHROPIC_API_KEY!,
-        "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-3-5-sonnet-20241022",
-        max_tokens: 500,
-        messages: [
-          {
-            role: "user",
-            content: prompt,
-          },
-        ],
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.4,
+          maxOutputTokens: 500,
+        },
       }),
     });
 
     if (!response.ok) {
       const errText = await response.text();
-      console.error("Anthropic error:", errText);
+      console.error("Gemini error:", errText);
       return res.status(500).json({ error: "AI provider failed" });
     }
 
     const data = await response.json();
 
     // ✅ Clean response
-    const text = data?.content?.[0]?.text || "";
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
     const clean = text.replace(/```json|```/g, "").trim();
 
     let parsed;
@@ -178,7 +185,13 @@ Respond ONLY in JSON:
 
   } catch (err: any) {
     console.error("AI route error:", err.message);
-    res.status(500).json({ error: "AI request failed" });
+    if (err.message?.includes("GEMINI_API_KEY is missing")) {
+      return res.status(503).json({
+        error: "AI insight is not configured on the server (missing GEMINI_API_KEY).",
+      });
+    }
+
+    res.status(500).json({ error: err.message || "AI request failed" });
   }
 });
 

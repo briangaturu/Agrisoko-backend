@@ -1,14 +1,12 @@
+import "dotenv/config";
 import http from "http";
 import { Server } from "socket.io";
 import app from "./app";
-import dotenv from "dotenv";
 import db from "./drizzle/db";
 import { messages, conversations, conversationParticipants, orders } from "./drizzle/schema";
 import { eq, and, lte, isNotNull } from "drizzle-orm";
 import cron from "node-cron";
 import { sendB2CPayment } from "./payments/mpesa.service";
-
-dotenv.config();
 
 const PORT = process.env.PORT || 5000;
 
