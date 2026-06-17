@@ -26,10 +26,22 @@ const PORT = process.env.PORT || 5000;
 // ─────────────────────────────────────────────
 app.use(express_1.default.json());
 app.use(express_1.default.urlencoded({ extended: true }));
+const allowedOrigins = [
+    "http://localhost:5173",
+    "https://agrisoko.netlify.app",
+];
 app.use((0, cors_1.default)({
-    origin: "http://localhost:5173",
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        }
+        else {
+            callback(new Error(`Not allowed by CORS: ${origin}`));
+        }
+    },
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
 }));
 // Logger
 app.use((req, res, next) => {
