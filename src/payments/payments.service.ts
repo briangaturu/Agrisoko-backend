@@ -15,7 +15,7 @@ export const getPaymentsService = async (): Promise<TPaymentSelect[]> => {
 
 // GET PAYMENT BY ID
 export const getPaymentByIdService = async (
-  paymentId: number
+  paymentId: string
 ): Promise<TPaymentSelect | undefined> => {
   return await db.query.payments.findFirst({
     where: eq(payments.id, paymentId),
@@ -25,7 +25,7 @@ export const getPaymentByIdService = async (
 
 // GET PAYMENTS BY ORDER
 export const getPaymentsByOrderService = async (
-  orderId: number
+  orderId: string
 ): Promise<TPaymentSelect[]> => {
   return await db.query.payments.findMany({
     where: eq(payments.orderId, orderId),
@@ -42,7 +42,7 @@ export const createPaymentService = async (
 
 // UPDATE PAYMENT
 export const updatePaymentService = async (
-  paymentId: number,
+  paymentId: string,
   data: Partial<TPaymentInsert>
 ): Promise<TPaymentSelect> => {
   const [updated] = await db

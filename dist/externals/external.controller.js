@@ -1,0 +1,134 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.aiInsight = exports.diseaseDetection = exports.weather = exports.marketPrices = void 0;
+const external_service_1 = require("./external.service");
+// ✅ IMPORT LISTINGS SERVICE (IMPORTANT)
+const listings_service_1 = require("../listings/listings.service");
+// ─────────────────────────────────────────────────────────────────────────────
+// ✅ GET /api/external/prices (FROM YOUR DATABASE)
+// ─────────────────────────────────────────────────────────────────────────────
+const marketPrices = async (req, res) => {
+    try {
+        const listings = await (0, listings_service_1.getAllListingsServices)();
+        if (!listings || listings.length === 0) {
+            return res.json({ data: [] });
+        }
+        const grouped = {};
+        // Group listings by crop
+        listings.forEach((l) => {
+            if (l.status !== "ACTIVE")
+                return;
+            const cropName = l.crop?.name || "Unknown";
+            if (!grouped[cropName])
+                grouped[cropName] = [];
+            grouped[cropName].push(l);
+        });
+        const prices = Object.entries(grouped).map(([name, items]) => {
+            const sorted = items.sort((a, b) => new Date(b.createdAt).getTime() -
+                new Date(a.createdAt).getTime());
+            const latest = sorted[0];
+            const previous = sorted[1];
+            const latestPrice = Number(latest.pricePerUnit);
+            const prevPrice = previous ? Number(previous.pricePerUnit) : null;
+            const change = prevPrice && prevPrice > 0
+                ? Number((((latestPrice - prevPrice) / prevPrice) * 100).toFixed(1))
+                : 0;
+            const avgPrice = items.reduce((sum, item) => sum + Number(item.pricePerUnit), 0) / items.length;
+            return {
+                name,
+                price: Math.round(avgPrice),
+                unit: latest.crop?.unit || "kg",
+                location: latest.location || "Kenya",
+                change,
+            };
+        });
+        res.json({ data: prices });
+    }
+    catch (err) {
+        console.error("marketPrices error:", err.message);
+        res.status(500).json({
+            error: err.message || "Failed to fetch market prices",
+        });
+    }
+};
+exports.marketPrices = marketPrices;
+// ─────────────────────────────────────────────────────────────────────────────
+// ✅ GET /api/external/weather
+// ─────────────────────────────────────────────────────────────────────────────
+const weather = async (req, res) => {
+    try {
+        const location = req.query.location || "Nairobi";
+        const days = Number(req.query.days) || 5;
+        const data = await (0, external_service_1.getWeather)(location, days);
+        res.json({ data });
+    }
+    catch (err) {
+        console.error("weather error:", err.message);
+        res.status(500).json({
+            error: err.message || "Failed to fetch weather",
+        });
+    }
+};
+exports.weather = weather;
+// ─────────────────────────────────────────────────────────────────────────────
+// ✅ POST /api/external/disease (IMPROVED ERROR HANDLING)
+// ─────────────────────────────────────────────────────────────────────────────
+const diseaseDetection = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                error: "Image file is required",
+            });
+        }
+        const results = await (0, external_service_1.detectPlantDisease)(req.file.buffer, req.file.mimetype);
+        // 🟢 Normalize empty results
+        if (!results || results.length === 0) {
+            return res.status(200).json({
+                data: [],
+                message: "No disease detected",
+            });
+        }
+        res.json({ data: results });
+    }
+    catch (err) {
+        console.error("diseaseDetection error:", err.message);
+        // 🔴 Model loading (HF 503)
+        if (err.message?.toLowerCase().includes("loading")) {
+            return res.status(503).json({
+                error: "AI model is warming up. Try again in a few seconds.",
+            });
+        }
+        // 🔴 Invalid response (your 410 / HTML issue)
+        if (err.message?.toLowerCase().includes("invalid response")) {
+            return res.status(502).json({
+                error: "AI service unavailable. Please try again later.",
+            });
+        }
+        res.status(500).json({
+            error: err.message || "Disease detection failed",
+        });
+    }
+};
+exports.diseaseDetection = diseaseDetection;
+// ─────────────────────────────────────────────────────────────────────────────
+// ✅ POST /api/external/ai-insight
+// ─────────────────────────────────────────────────────────────────────────────
+const aiInsight = async (req, res) => {
+    try {
+        const { crop, weather, price } = req.body;
+        if (!crop) {
+            return res.status(400).json({
+                error: "crop is required",
+            });
+        }
+        const data = await (0, external_service_1.getAIInsight)(crop, weather, price);
+        res.json(data);
+    }
+    catch (err) {
+        console.error("aiInsight error:", err.message);
+        res.status(500).json({
+            error: err.message || "AI insight failed",
+        });
+    }
+};
+exports.aiInsight = aiInsight;

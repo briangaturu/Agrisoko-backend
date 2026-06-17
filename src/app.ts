@@ -9,6 +9,7 @@ import { listingsRouter } from "./listings/listings.route";
 import { ordersRouter } from "./orders/orders.route";
 import { paymentsRouter } from "./payments/payments.route";
 import { notificationsRouter } from "./notifications/notifications.route";
+import { emailjsRouter } from "./emailjs/emailjs.route";
 
 import { rateLimiterMiddleware } from "./middleware/rateLimiter";
 
@@ -62,6 +63,7 @@ app.use("/api/listings", listingsRouter);
 app.use("/api/orders", ordersRouter);
 app.use("/api/payments", paymentsRouter);
 app.use("/api/notifications", notificationsRouter);
+app.use("/api/emailjs", emailjsRouter);
 app.use("/api/conversations", require("./conversations/conversations.route").default);
 app.use("/api/ai-insight", require("./ai/ai.route").default);
 app.use("/api/external", require("./externals/external.route").default);
@@ -90,7 +92,7 @@ app.post("/api/conversations/start", async (req: Request, res: Response) => {
 // Get messages
 app.get("/api/conversations/:id/messages", async (req: Request, res: Response) => {
   try {
-    const id = req.params.id;
+    const id = req.params.id as string;
 
     const msgs = await db.query.messages.findMany({
       where: eq(messages.conversationId, id),

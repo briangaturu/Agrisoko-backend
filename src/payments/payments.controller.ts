@@ -23,7 +23,11 @@ export const getPayments = async (req: Request, res: Response) => {
 
 export const getPaymentById = async (req: Request, res: Response) => {
   try {
-    const data = await getPaymentByIdService(Number(req.params.id));
+    const { id } = req.params;
+    if (typeof id !== "string") {
+      return res.status(400).json({ error: "Invalid payment id" });
+    }
+    const data = await getPaymentByIdService(id);
     if (!data) return res.status(404).json({ error: "Payment not found" });
     return res.json({ message: "Payment fetched successfully", data });
   } catch (err: any) {
@@ -33,7 +37,11 @@ export const getPaymentById = async (req: Request, res: Response) => {
 
 export const getPaymentsByOrder = async (req: Request, res: Response) => {
   try {
-    const data = await getPaymentsByOrderService(Number(req.params.orderId));
+    const { orderId } = req.params;
+    if (typeof orderId !== "string") {
+      return res.status(400).json({ error: "Invalid order id" });
+    }
+    const data = await getPaymentsByOrderService(orderId);
     return res.json({ message: "Payments fetched successfully", data });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
@@ -55,7 +63,11 @@ export const createPayment = async (req: Request, res: Response) => {
 
 export const updatePayment = async (req: Request, res: Response) => {
   try {
-    const data = await updatePaymentService(Number(req.params.id), req.body);
+    const { id } = req.params;
+    if (typeof id !== "string") {
+      return res.status(400).json({ error: "Invalid payment id" });
+    }
+    const data = await updatePaymentService(id, req.body);
     return res.json({ message: "Payment updated successfully", data });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });

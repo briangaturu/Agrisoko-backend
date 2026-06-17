@@ -9,17 +9,25 @@ import {
 } from "./Auth.service";
 
 import { UserLoginValidator, UserValidator } from "../validation/user.validator";
-import { sendNotificationEmail } from "../middleware/googleMailer";
+import { sendNotificationEmail } from "../middleware/GoogleMailer";
 import { getUserByIdServices } from "../users/user.service";
+
+// --------------------------- JWT TYPE ---------------------------
+type JwtPayload = {
+  userId: string;
+  email: string;
+  role: string;
+  exp?: number;
+};
 
 // --------------------------- HELPERS ---------------------------
 const getJWTSecret = (): string => {
-  const secret = process.env.JWT_SECRET as string | undefined;
+  const secret = process.env.JWT_SECRET;
   if (!secret) throw new Error("JWT_SECRET is not defined!");
   return secret;
 };
 
-// --------------------------- CREATE USER (REGISTER) ---------------------------
+// --------------------------- REGISTER ---------------------------
 export const createUser = async (req: Request, res: Response) => {
   try {
     const parseResult = UserValidator.safeParse(req.body);
@@ -27,26 +35,21 @@ export const createUser = async (req: Request, res: Response) => {
       return res.status(400).json({ error: parseResult.error.issues });
     }
 
-    /**
-     * Expected fields for YOUR schema:
-     * fullName, email, phone?, password, role?
-     */
     const userInput = parseResult.data;
 
     const existingUser = await getUserByEmailService(userInput.email);
     if (existingUser) {
-      return res.status(400).json({ error: "User with this email already exists" });
+      return res.status(400).json({ error: "User already exists" });
     }
 
     const hashedPassword = await bcrypt.hash(userInput.password, 10);
 
-    // Map to your schema fields
     const payloadToCreate = {
       fullName: userInput.fullName,
       email: userInput.email,
       phone: userInput.phone ?? null,
       password: hashedPassword,
-      role: userInput.role ?? "BUYER", // FARMER | BUYER | ADMIN
+      role: userInput.role ?? "BUYER",
       isVerified: false,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -54,12 +57,11 @@ export const createUser = async (req: Request, res: Response) => {
 
     const newUser = await createUserServices(payloadToCreate);
 
-    // optional welcome email
     await sendNotificationEmail(
       userInput.email,
       "Account created — Farm Marketplace",
       userInput.fullName,
-      "Your account has been created successfully. You can now login and start using the marketplace."
+      "Your account has been created successfully."
     );
 
     return res.status(201).json({
@@ -74,11 +76,11 @@ export const createUser = async (req: Request, res: Response) => {
       },
     });
   } catch (error: any) {
-    return res.status(500).json({ error: error.message || "Failed to create user" });
+    return res.status(500).json({ error: error.message });
   }
 };
 
-// --------------------------- LOGIN USER ---------------------------
+// --------------------------- LOGIN ---------------------------
 export const loginUser = async (req: Request, res: Response) => {
   try {
     const parseResult = UserLoginValidator.safeParse(req.body);
@@ -93,27 +95,20 @@ export const loginUser = async (req: Request, res: Response) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // if you want to enforce email verification
-    // if (user.isVerified === false) {
-    //   return res.status(403).json({ error: "Please verify your email first" });
-    // }
-
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ error: "Invalid password" });
     }
 
-    // ✅ include role in token payload
-    const payload = {
+    // CLEAN JWT PAYLOAD (NO sub, NO exp manually)
+    const payload: JwtPayload = {
       userId: user.userId,
       email: user.email,
-      role: user.role, // ✅ ADD THIS
-      exp: Math.floor(Date.now() / 1000) + 60 * 60, // 1 hour
+      role: user.role,
     };
 
-    const token = jwt.sign(payload, getJWTSecret());
+    const token = jwt.sign(payload, getJWTSecret(), { expiresIn: "1h" });
 
-    // ✅ return role (and fullName/phone if you want)
     return res.status(200).json({
       message: "Login successful",
       token,
@@ -122,70 +117,91 @@ export const loginUser = async (req: Request, res: Response) => {
         fullName: user.fullName,
         email: user.email,
         phone: user.phone,
-        role: user.role, // ✅ ADD THIS
+        role: user.role,
         isVerified: user.isVerified,
       },
     });
   } catch (error: any) {
-    return res.status(500).json({ error: error.message || "Failed to login user" });
+    return res.status(500).json({ error: error.message });
   }
 };
 
-// --------------------------- PASSWORD RESET (EMAIL LINK) ---------------------------
+// --------------------------- PASSWORD RESET EMAIL ---------------------------
 export const passwordReset = async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
-    if (!email) return res.status(400).json({ error: "Email is required" });
+
+    if (!email) {
+      return res.status(400).json({ error: "Email is required" });
+    }
 
     const user = await getUserByEmailService(email);
-    if (!user) return res.status(404).json({ error: "User not found" });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
 
-    // token contains userId in `sub`
-    const resetToken = jwt.sign({ sub: user.userId }, getJWTSecret(), { expiresIn: "1h" });
+    const resetToken = jwt.sign(
+      { userId: user.userId },
+      getJWTSecret(),
+      { expiresIn: "1h" }
+    );
 
     const resetLink = `${
       process.env.FRONTEND_URL ?? "http://localhost:3000"
     }/reset-password/${resetToken}`;
 
-    const results = await sendNotificationEmail(
+    await sendNotificationEmail(
       email,
-      "Password Reset — Farm Marketplace",
+      "Password Reset",
       user.fullName,
-      `Click the link to reset your password: <a href="${resetLink}">Reset Password</a>`
+      `Click to reset password: <a href="${resetLink}">Reset Password</a>`
     );
 
-    if (!results) return res.status(500).json({ error: "Failed to send reset email" });
-
-    return res.status(200).json({ message: "Password reset email sent successfully" });
+    return res.status(200).json({
+      message: "Password reset email sent",
+    });
   } catch (error: any) {
-    return res.status(500).json({ error: error.message || "Failed to reset password" });
+    return res.status(500).json({ error: error.message });
   }
 };
 
-// --------------------------- UPDATE PASSWORD (USING RESET TOKEN) ---------------------------
+// --------------------------- RESET PASSWORD ---------------------------
 export const updatePassword = async (req: Request, res: Response) => {
   try {
     const { token } = req.params;
     const { password } = req.body;
 
-    if (!token) return res.status(400).json({ error: "Token is required" });
-    if (!password) return res.status(400).json({ error: "Password is required" });
+    if (!token || typeof token !== "string") {
+      return res.status(400).json({ error: "Token is required" });
+    }
 
-    const payload = jwt.verify(token, getJWTSecret()) as any;
+    if (!password) {
+      return res.status(400).json({ error: "Password is required" });
+    }
 
-    // support both { sub: ... } and { userId: ... }
-    const userId: string | undefined = payload.sub ?? payload.userId;
-    if (!userId) return res.status(400).json({ error: "Invalid token payload" });
+    const decoded = jwt.verify(token, getJWTSecret()) as unknown as JwtPayload;
+
+    const userId = decoded.userId;
+
+    if (!userId) {
+      return res.status(400).json({ error: "Invalid token payload" });
+    }
 
     const user = await getUserByIdServices(userId);
-    if (!user) return res.status(404).json({ error: "User not found" });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
     await updateUserPasswordService(user.email, hashedPassword);
 
-    return res.status(200).json({ message: "Password has been reset successfully" });
+    return res.status(200).json({
+      message: "Password updated successfully",
+    });
   } catch (error: any) {
-    return res.status(500).json({ error: error.message || "Invalid or expired token" });
+    return res.status(500).json({
+      error: error.message || "Invalid or expired token",
+    });
   }
 };

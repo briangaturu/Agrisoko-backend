@@ -116,7 +116,7 @@ export const sendNotification = async (
   }
 ) => {
   try {
-    const { createNotificationService } = await import("./notifications/notifications.service");
+    const { createNotificationService } = await import("./notifications/notifications.service.js");
     const saved = await createNotificationService({
       userId,
       ...notification,

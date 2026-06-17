@@ -17,16 +17,16 @@ import { relations } from "drizzle-orm";
 export const userRoleEnum = pgEnum("user_role", ["FARMER", "BUYER", "ADMIN"]);
 export const listingStatusEnum = pgEnum("listing_status", ["ACTIVE", "SOLD", "PAUSED"]);
 export const orderStatusEnum = pgEnum("order_status", [
-  "PENDING",       // order created, awaiting payment
-  "PAID",          // STK push confirmed, money in escrow
-  "RECEIVED",      // farmer acknowledged the order
-  "SHIPPED",       // farmer dispatched the order
-  "DELIVERED",     // legacy: farmer marked as delivered (kept for backwards compat)
-  "CONFIRMED",     // buyer confirmed receipt → triggers B2C to farmer
-  "CANCELLED",     // order cancelled
-  "DISPUTED",      // buyer raised a dispute
-  "REFUNDED",      // buyer refunded via B2C
-  "AUTO_RELEASED", // buyer didn't respond in 48hrs, farmer auto-paid
+  "PENDING",       
+  "PAID",          
+  "RECEIVED",      
+  "SHIPPED",       
+  "DELIVERED",     
+  "CONFIRMED",    
+  "CANCELLED",     
+  "DISPUTED",      
+  "REFUNDED",      
+  "AUTO_RELEASED", 
 ]);
 export const paymentStatusEnum = pgEnum("payment_status", ["SUCCESS", "FAILED", "PENDING"]);
 

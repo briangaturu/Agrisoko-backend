@@ -77,8 +77,8 @@ export const getUserConversationsService = async (userId: string) => {
                 columns: {
                   userId: true,
                   fullName: true,
-                  avatar: true,   // ✅ added
-                  role: true,     // ✅ added
+                  // avatar: true,   
+                  role: true,     
                 },
               },
             },

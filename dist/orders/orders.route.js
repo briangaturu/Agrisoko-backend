@@ -1,0 +1,15 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.ordersRouter = void 0;
+const express_1 = require("express");
+const orders_contoller_1 = require("./orders.contoller");
+const AuthBearer_1 = require("../middleware/AuthBearer");
+exports.ordersRouter = (0, express_1.Router)();
+exports.ordersRouter.get("/", AuthBearer_1.bothRoleAuth, orders_contoller_1.getOrders);
+exports.ordersRouter.get("/buyer/:buyerId", AuthBearer_1.bothRoleAuth, orders_contoller_1.getOrdersByBuyer);
+exports.ordersRouter.get("/:id", AuthBearer_1.bothRoleAuth, orders_contoller_1.getOrderById);
+exports.ordersRouter.post("/", AuthBearer_1.bothRoleAuth, orders_contoller_1.createOrder);
+exports.ordersRouter.put("/:id", AuthBearer_1.bothRoleAuth, orders_contoller_1.updateOrder);
+exports.ordersRouter.delete("/:id", AuthBearer_1.bothRoleAuth, orders_contoller_1.deleteOrder);
+exports.ordersRouter.put("/:id/confirm", AuthBearer_1.bothRoleAuth, orders_contoller_1.confirmOrderReceived);
+exports.ordersRouter.put("/:id/deliver", AuthBearer_1.bothRoleAuth, orders_contoller_1.markOrderDelivered);

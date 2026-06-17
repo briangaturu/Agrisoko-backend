@@ -94,58 +94,96 @@ export const getWeather = async (location: string, days = 5) => {
 };
 
 // ══════════════════════════════════════════════════════════════════════════════
-// 3. DISEASE DETECTION — Hugging Face
+// 3. DISEASE DETECTION — Kindwise crop.health
 // ══════════════════════════════════════════════════════════════════════════════
 export const detectPlantDisease = async (
   imageBuffer: Buffer,
   mimeType: string
 ) => {
-  const hfApiKey = readRequiredEnv("HF_API_KEY");
-  const res = await fetch(
-    "https://router.huggingface.co/hf-inference/models/ozair/plant-disease-detection",
-    {
+  const kindwiseApiKey = readRequiredEnv("KINDWISE_API_KEY");
+  const kindwiseApiUrl = readRequiredEnv("KINDWISE_API_URL");
+
+  const dataUri = `data:${mimeType};base64,${imageBuffer.toString("base64")}`;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 25000);
+  let res;
+
+  try {
+    res = await fetch(kindwiseApiUrl, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${hfApiKey}`,
-        "Content-Type": mimeType,
+        "Api-Key": kindwiseApiKey,
+        "Content-Type": "application/json",
       },
-      body: imageBuffer,
+      body: JSON.stringify({
+        images: [dataUri],
+      latitude: Number(process.env.KINDWISE_LATITUDE || 49.207),
+      longitude: Number(process.env.KINDWISE_LONGITUDE || 16.608),
+      similar_images: true,
+        language: "en",
+      }),
+      signal: controller.signal,
+    });
+  } catch (error: any) {
+    const msg = String(error?.message || "");
+    if (msg.includes("socket hang up") || msg.includes("ECONNRESET")) {
+      throw new Error(
+        "Could not connect to Kindwise API (socket hang up). Verify KINDWISE_API_URL is the exact direct API endpoint and check outbound network/firewall access."
+      );
     }
-  );
-
-  // Always read as text first so we never crash on non-JSON
-  const contentType = res.headers.get("content-type") || "";
-  const rawBody     = await res.text();
-
-  // Log for debugging — remove once confirmed working
-  console.log("🔬 HF status:", res.status);
-  console.log("🔬 HF content-type:", contentType);
-  console.log("🔬 HF raw body:", rawBody.slice(0, 300));
-
-  // Model warming up
-  if (res.status === 503) {
-    throw new Error("Model is loading. Please wait 20 seconds and try again.");
+    if (error?.name === "AbortError") {
+      throw new Error(
+        "Kindwise request timed out after 25 seconds. Check KINDWISE_API_URL and network connectivity."
+      );
+    }
+    throw new Error(`Kindwise network error: ${msg}`);
+  } finally {
+    clearTimeout(timeout);
   }
 
-  // Try to parse JSON
+  const contentType = res.headers.get("content-type") || "";
+  const rawBody = await res.text();
+
+  if (contentType.includes("text/html") || rawBody.trim().startsWith("<!DOCTYPE html")) {
+    throw new Error(
+      "Kindwise returned HTML instead of JSON. Check KINDWISE_API_URL and use the direct API endpoint from your Kindwise dashboard."
+    );
+  }
+
   let json: any;
   try {
     json = JSON.parse(rawBody);
   } catch {
     throw new Error(
-      `Unexpected HuggingFace response (status ${res.status}): ${rawBody.slice(0, 200)}`
+      `Unexpected Kindwise response (status ${res.status}): ${rawBody.slice(0, 250)}`
     );
   }
 
   if (!res.ok) {
-    throw new Error(json?.error || `HuggingFace API error ${res.status}`);
+    throw new Error(
+      json?.detail || json?.message || `Kindwise API error ${res.status}: ${rawBody.slice(0, 200)}`
+    );
   }
 
-  if (!Array.isArray(json)) {
-    throw new Error(`Unexpected response shape: ${JSON.stringify(json).slice(0, 200)}`);
+  const suggestions =
+    json?.result?.disease?.suggestions ||
+    json?.result?.health_assessment?.diseases ||
+    json?.diseases ||
+    [];
+
+  if (!Array.isArray(suggestions)) {
+    throw new Error(`Unexpected Kindwise shape: ${JSON.stringify(json).slice(0, 300)}`);
   }
 
-  return (json as Array<{ label: string; score: number }>).slice(0, 5);
+  return suggestions.slice(0, 5).map((item: any) => {
+    const label =
+      item?.name ||
+      item?.disease_details?.common_names?.[0] ||
+      item?.disease_details?.scientific_name ||
+      "Unknown disease";
+    const score = Number(item?.probability ?? item?.confidence ?? 0);
+    return { label, score };
+  });
 };
 
 // ══════════════════════════════════════════════════════════════════════════════
