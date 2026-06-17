@@ -1,10 +1,6 @@
 "use strict";
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getAIInsight = exports.detectPlantDisease = exports.getWeather = exports.getMarketPrices = void 0;
-const node_fetch_1 = __importDefault(require("node-fetch"));
 // ── ENV ────────────────────────────────────────────────────────────────────────
 const readRequiredEnv = (name) => {
     const raw = process.env[name];
@@ -22,7 +18,7 @@ const getMarketPrices = async (market) => {
     url.searchParams.set("country", "KE");
     if (market)
         url.searchParams.set("market", market);
-    const res = await (0, node_fetch_1.default)(url.toString(), {
+    const res = await fetch(url.toString(), {
         headers: {
             Authorization: `Bearer ${process.env.UJUZI_API_KEY}`,
             "Content-Type": "application/json",
@@ -76,7 +72,7 @@ const getWeather = async (location, days = 5) => {
     url.searchParams.set("q", location);
     url.searchParams.set("days", String(days));
     url.searchParams.set("aqi", "no");
-    const res = await (0, node_fetch_1.default)(url.toString());
+    const res = await fetch(url.toString());
     if (!res.ok) {
         const err = await res.text();
         throw new Error(`WeatherAPI error ${res.status}: ${err}`);
@@ -95,7 +91,7 @@ const detectPlantDisease = async (imageBuffer, mimeType) => {
     const timeout = setTimeout(() => controller.abort(), 25000);
     let res;
     try {
-        res = await (0, node_fetch_1.default)(kindwiseApiUrl, {
+        res = await fetch(kindwiseApiUrl, {
             method: "POST",
             headers: {
                 "Api-Key": kindwiseApiKey,
@@ -161,7 +157,7 @@ exports.detectPlantDisease = detectPlantDisease;
 // ══════════════════════════════════════════════════════════════════════════════
 const getAIInsight = async (crop, weather, price) => {
     const groqKey = readRequiredEnv("GROQ_API_KEY");
-    const response = await (0, node_fetch_1.default)("https://api.groq.com/openai/v1/chat/completions", {
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
         headers: {
             "Authorization": `Bearer ${groqKey}`,
